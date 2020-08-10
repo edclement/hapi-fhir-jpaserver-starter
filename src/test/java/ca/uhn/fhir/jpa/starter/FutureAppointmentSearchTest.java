@@ -166,22 +166,27 @@ public class FutureAppointmentSearchTest {
       .execute();
     assertEquals(eyecolourBundle.getTotal().intValue(), 1);
 
-    // this passes, patient retrieved from the eyecolour search has a future-appointment-count set
-    Patient searchResultPatient = (Patient) eyecolourBundle.getEntry().get(0).getResource();
-    List<ExtensionDt> appointmentCountExtensions = searchResultPatient.getUndeclaredExtensionsByUrl("http://integer");
-    assertEquals(appointmentCountExtensions.size(), 1);
-    assertEquals(appointmentCountExtensions.get(0).getValue().toString(), new IntegerDt(2).toString());
+    // this PASSES, patient retrieved from the eyecolour search has a future-appointment-count set to 2
+    Patient searchResultPatient1 = (Patient) eyecolourBundle.getEntry().get(0).getResource();
+    List<ExtensionDt> appointmentCountExtensions1 = searchResultPatient1.getUndeclaredExtensionsByUrl("http://integer");
+    assertEquals(appointmentCountExtensions1.size(), 1);
+    assertEquals(appointmentCountExtensions1.get(0).getValue().toString(), new IntegerDt(2).toString());
 
-    // this fails, even though we just proved that the single patient has both the eyecolour and future-appointment-count extensions
+    // this PASSES
     Bundle futureAppointmentCountBundle1 = ourClient
       .search()
       .forResource(Patient.class)
-      .where(new NumberClientParam("future-appointment-count").exactly().number(2))
+      .where(new NumberClientParam("future-appointment-count").greaterThan().number(0))
       .returnBundle(Bundle.class)
       .execute();
     assertEquals(futureAppointmentCountBundle1.getTotal().intValue(), 1);
+    // this passes, patient retrieved from the futureAppointmentCountBundle1 search has a future-appointment-count set to 2
+    Patient searchResultPatient2 = (Patient) eyecolourBundle.getEntry().get(0).getResource();
+    List<ExtensionDt> appointmentCountExtensions2 = searchResultPatient2.getUndeclaredExtensionsByUrl("http://integer");
+    assertEquals(appointmentCountExtensions2.size(), 1);
+    assertEquals(appointmentCountExtensions2.get(0).getValue().toString(), new IntegerDt(2).toString());
 
-    // this fails, even though we just proved that the single patient has both the eyecolour and future-appointment-count extensions
+    // this FAILS, even though we just proved that the patient has a future appointment count set to 2
     Bundle futureAppointmentCountBundle2 = ourClient
       .search()
       .forResource(Patient.class)
@@ -189,5 +194,14 @@ public class FutureAppointmentSearchTest {
       .returnBundle(Bundle.class)
       .execute();
     assertEquals(futureAppointmentCountBundle2.getTotal().intValue(), 1);
+
+    // this FAILS, even though we just proved that the patient has a future appointment count set to 2
+    Bundle futureAppointmentCountBundle3 = ourClient
+      .search()
+      .forResource(Patient.class)
+      .where(new NumberClientParam("future-appointment-count").exactly().number(2))
+      .returnBundle(Bundle.class)
+      .execute();
+    assertEquals(futureAppointmentCountBundle3.getTotal().intValue(), 1);
   }
 }
