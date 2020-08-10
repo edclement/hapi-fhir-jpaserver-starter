@@ -1,6 +1,7 @@
 package ca.uhn.fhir.jpa.starter;
 
 import ca.uhn.fhir.context.FhirContext;
+import ca.uhn.fhir.jpa.searchparam.registry.ISearchParamRegistry;
 import ca.uhn.fhir.model.api.ExtensionDt;
 import ca.uhn.fhir.model.dstu2.resource.Appointment;
 import ca.uhn.fhir.model.dstu2.resource.Bundle;
@@ -31,6 +32,7 @@ public class FutureAppointmentSearchTest {
   private static FhirContext ourCtx;
   private static int ourPort;
   private static Server ourServer;
+  private static org.springframework.context.ApplicationContext appCtx;
 
   static {
     HapiProperties.forceReload();
@@ -61,7 +63,7 @@ public class FutureAppointmentSearchTest {
     ourServer.start();
     ourPort = JettyUtil.getPortForStartedServer(ourServer);
 
-    org.springframework.context.ApplicationContext appCtx = (ApplicationContext) webAppContext.getServletContext()
+    appCtx = (ApplicationContext) webAppContext.getServletContext()
       .getAttribute("org.springframework.web.context.WebApplicationContext.ROOT");
 
     ourCtx = appCtx.getBean(FhirContext.class);
@@ -185,6 +187,9 @@ public class FutureAppointmentSearchTest {
     List<ExtensionDt> appointmentCountExtensions2 = searchResultPatient2.getUndeclaredExtensionsByUrl("http://integer");
     assertEquals(appointmentCountExtensions2.size(), 1);
     assertEquals(appointmentCountExtensions2.get(0).getValue().toString(), new IntegerDt(2).toString());
+
+    ISearchParamRegistry searchParamRegistry = appCtx.getBean(ISearchParamRegistry.class);
+    searchParamRegistry.refreshCacheIfNecessary();
 
     // this FAILS, even though we just proved that the patient has a future appointment count set to 2
     Bundle futureAppointmentCountBundle2 = ourClient
